@@ -2,7 +2,7 @@
 FROM tensorflow/tensorflow:1.8.0-gpu-py3
 
 # install git so spectraml can be installed from GitHub
-RUN apt-get update && apt-get install -y git
+RUN apt-get update && apt-get install -y git texlive texlive-latex-extra dvipng
 
 # create directory for Python's packages installation
 # so that spectraml can be correctly installed

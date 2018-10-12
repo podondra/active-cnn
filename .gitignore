@@ -1,3 +1,9 @@
+# Data files
+/data/
+
+# Figures
+/figures/
+
 # VIM files
 *~
 
