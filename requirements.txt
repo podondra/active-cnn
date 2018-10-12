@@ -1,0 +1,1 @@
+git+https://github.com/podondra/spectraml.git@18e084cdccbf958eba69cbbb9c44cff82f0b793b#egg=spectraml
