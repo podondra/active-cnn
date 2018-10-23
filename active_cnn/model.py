@@ -56,8 +56,10 @@ def get_training_data(it, hdf5):
 def save_predictions(it, hdf5, y_pred):
     with h5py.File(hdf5, 'r+') as f:
         it_gr = f['iteration_{:02}'.format(it)]
+        # probabilities
         dt = it_gr.create_dataset('y_pred', y_pred.shape, y_pred.dtype)
         dt[...] = y_pred
+        # TODO labels
 
 
 def learning(it, hdf5):

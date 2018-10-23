@@ -22,3 +22,10 @@ def preview_lamost_spectrum(filename):
     ax2.plot(wave[index], flux[index])
     plt.show()
     plt.close(fig)
+
+
+def plot_performance(performance_df):
+    mean = performance_df.groupby('iteration').mean()
+    ax = plt.axes(xlabel='iteration', ylabel='estimated accuracy')
+    ax.plot(mean.index - 1, mean, 'x')
+    ax.set_xticks(mean.index - 1);
