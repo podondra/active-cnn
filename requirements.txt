@@ -12,6 +12,7 @@ gast==0.2.0
 grpcio==1.11.0
 h5py==2.8.0
 html5lib==0.9999999
+imbalanced-learn==0.4.2
 ipykernel==4.8.2
 ipython==6.3.1
 ipython-genutils==0.2.0
@@ -54,7 +55,7 @@ pytz==2018.4
 PyYAML==3.13
 pyzmq==17.0.0
 qtconsole==4.3.1
-scikit-learn==0.19.1
+scikit-learn==0.20.0
 scipy==1.0.1
 Send2Trash==1.5.0
 simplegeneric==0.8.1
