@@ -39,5 +39,10 @@ def train(model, X, y):
             )
     model.fit(
             X.reshape(-1, 140, 1), one_hot_y, batch_size=64, epochs=1000,
-            callbacks=[callback]
+            callbacks=[callback], verbose=1
             )
+
+
+def predict(model, X):
+    X = X[...].reshape(-1, 140, 1)
+    return model.predict(X, verbose=1, batch_size=2 ** 14)

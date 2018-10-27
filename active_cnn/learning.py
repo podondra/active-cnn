@@ -1,52 +1,70 @@
 from functools import partial
 from . import data
+from . import model
+from . import preprocessing
 import h5py
 import numpy as np
 import pandas as pd
+from scipy.stats import entropy
 
 
 def initialize(ids_tr, X_tr, y_tr, ids, X):
+    it = 0
     # create table for estimation of performance
     est_perf_df = pd.DataFrame(columns=('predicted', 'correct', 'iteration'))
     est_perf_df.index.name = 'identifier'
     # create table for storage of oracle labelling
     oracle_df = pd.DataFrame(columns=('label', 'iteration'))
     oracle_df.index.name = 'identifier'
+    # create HDF5 file with data
+    hdf5 = h5py.File('data/learning-data.h5', 'w')
+    data.save(it, hdf5, ids_tr, X_tr, y_tr, ids, X)
+    it_gr = hdf5['iteration_{:02}'.format(it)]
     # build a dictionary will of data for learning
     data_dict = {
-            'it': 0,
-            'hdf5': 'data/learning-data.h5',
-            'ids_tr': ids_tr,
-            'X_tr': X_tr,
-            'y_tr': y_tr,
-            'ids': ids,
-            'X': X,
+            'it': it,
+            'hdf5': hdf5,
+            'ids_tr': it_gr['ids_tr'],
+            'X_tr': it_gr['X_tr'],
+            'y_tr': it_gr['y_tr'],
+            'ids': it_gr['ids'],
+            'X': it_gr['X'],
             'est_perf_df': est_perf_df,
             'oracle_df': oracle_df,
             }
-    h5py.File(data_dict['hdf5'], 'w').close()
     return data_dict
 
 
-def save(data_dict):
-    data.save(
-            it=data_dict['it'],
-            hdf5=data_dict['hdf5'],
-            ids_tr=data_dict['ids_tr'],
-            X_tr=data_dict['X_tr'],
-            y_tr=data_dict['y_tr'],
-            ids=data_dict['ids'],
-            X=data_dict['X'],
-            )
-    # back up DataFrames
-    data_dict['est_perf_df'].to_csv('data/estimated-performance.csv')
-    data_dict['oracle_df'].to_csv('data/oracle-labels.csv')
+def save_predictions(data_dict, y_pred):
+    it = data_dict['it']
+    it_gr = data_dict['hdf5']['iteration_{:02}'.format(it)]
+    # probabilities
+    dt_pred = it_gr.create_dataset('y_pred', y_pred.shape, y_pred.dtype)
+    dt_pred[...] = y_pred
+    data_dict['y_pred'] = dt_pred
+    # labels
+    dt_labels = it_gr.create_dataset('labels', (y_pred.shape[0], ), np.int)
+    dt_labels[...] = np.argmax(y_pred, axis=1)
+    data_dict['labels'] = dt_labels
+    # entropy
+    dt_entropy = it_gr.create_dataset('entropy', (y_pred.shape[0], ), np.float)
+    dt_entropy[...] = entropy(y_pred.T)
+    data_dict['entropy'] = dt_entropy
 
 
-def load(data_dict):
-    # TODO
-    # y_pred = f['iteration_{:02}/y_pred'.format(iteration)][...]
-    ...
+def learning(data_dict):
+    X_tr, y_tr = data_dict['X_tr'], data_dict['y_tr']
+    X = data_dict['X']
+    X_tr_bal, y_tr_bal = preprocessing.balance(X_tr, y_tr)
+    # build the model and train it
+    cnn = model.get_model()
+    model.train(cnn, X_tr_bal, y_tr_bal)
+    # save network's weights
+    cnn.save('data/cnn-bu-it-{:02}.h5'.format(data_dict['it']))
+    # get and save predictions
+    y_pred = model.predict(cnn, X)
+    save_predictions(data_dict, y_pred)
+    return data_dict
 
 
 def show_prediction_stats(data_dict):

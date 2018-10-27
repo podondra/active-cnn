@@ -17,26 +17,26 @@ def get_ondrejov_dataset(dataset_file):
 
 
 def get_lamost_dataset(dataset_file):
-    lamost_collection = h5py.File(dataset_file)['lamost_dr2']
-    lamost_ids = lamost_collection['filenames'][:]
-    lamost_flux = lamost_collection['spectra'][...]
+    with h5py.File(dataset_file, 'r') as f:
+        lamost_collection = f['lamost_dr2']
+        lamost_ids = lamost_collection['filenames'][...]
+        lamost_flux = lamost_collection['spectra'][...]
     return lamost_ids, lamost_flux
 
 
 def save(it, hdf5, ids_tr, X_tr, y_tr, ids, X):
-    with h5py.File(hdf5) as f:
-        it_gr = f.create_group('iteration_{:02}'.format(it))
-        matrixes_names = [(X_tr, 'X_train'), (y_tr, 'y_train'), (X, 'X')]
-        for mat, name in matrixes_names:
-            dt = it_gr.create_dataset(name, mat.shape, mat.dtype)
-            dt[...] = mat
+    it_gr = hdf5.create_group('iteration_{:02}'.format(it))
+    matrixes_names = [(X_tr, 'X_tr'), (y_tr, 'y_tr'), (X, 'X')]
+    for mat, name in matrixes_names:
+        dt = it_gr.create_dataset(name, mat.shape, mat.dtype)
+        dt[...] = mat
 
-        # variable length data type
-        str_dt = h5py.special_dtype(vlen=str)
-        vectores_names = [(ids_tr, 'ids_train'), (ids, 'ids')]
-        for vec, name in vectores_names:
-            dt = it_gr.create_dataset(name, vec.shape, str_dt)
-            dt[...] = vec
+    # variable length data type
+    str_dt = h5py.special_dtype(vlen=str)
+    vectores_names = [(ids_tr, 'ids_tr'), (ids, 'ids')]
+    for vec, name in vectores_names:
+        dt = it_gr.create_dataset(name, vec.shape, str_dt)
+        dt[...] = vec
 
 
 def renew_datasets(
