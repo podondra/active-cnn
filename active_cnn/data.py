@@ -37,19 +37,3 @@ def save(it, hdf5, ids_tr, X_tr, y_tr, ids, X):
     for vec, name in vectores_names:
         dt = it_gr.create_dataset(name, vec.shape, str_dt)
         dt[...] = vec
-
-
-def renew_datasets(
-        X_train, ids_train, y_train, X, ids, index, oracle, iteration
-        ):
-    X_train = np.concatenate((X_train, X[index]))
-    ids_train = np.concatenate((ids_train, ids[index]))
-    y_train = np.concatenate((
-        y_train, oracle[oracle['iteration'] == iteration]['label'].values.astype(y_train.dtype)
-        ))
-
-    bool_index = np.zeros(X.shape[0], np.bool)
-    bool_index[index] = True
-    X = X[~bool_index]
-    ids = ids[~bool_index]
-    return X_train, ids_train, y_train, X, ids

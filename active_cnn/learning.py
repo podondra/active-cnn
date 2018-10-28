@@ -14,7 +14,7 @@ def initialize(ids_tr, X_tr, y_tr, ids, X):
     est_perf_df = pd.DataFrame(columns=('predicted', 'correct', 'iteration'))
     est_perf_df.index.name = 'identifier'
     # create table for storage of oracle labelling
-    oracle_df = pd.DataFrame(columns=('label', 'iteration'))
+    oracle_df = pd.DataFrame(columns=('predicted', 'correct', 'iteration'))
     oracle_df.index.name = 'identifier'
     # create HDF5 file with data
     hdf5 = h5py.File('data/learning-data.h5', 'w')
@@ -71,18 +71,21 @@ def show_prediction_stats(data_dict):
     return np.unique(data_dict['labels'], return_counts=True)
 
 
-def get_random_spectra(data_dict):
-    # TODO
-    # emission_index = np.arange(labels.shape[0])[labels]
-    # random_index = np.random.choice(emission_index, size=32, replace=False)
-    # gen = (filename for filename in ids[random_index])
-    ...
+def get_random_spectra(data_dict, size=30):
+    labels = data_dict['labels'][:]
+    ids = data_dict['ids'][:]
+    # take only positive examples: emissions and double-peaks
+    idx = np.arange(labels.shape[0])[labels != 0]
+    rnd_idx = np.random.choice(idx, size=size, replace=False)
+    # return a generator
+    return (pair for pair in zip(ids[rnd_idx], labels[rnd_idx]))
 
 
 def mark_spectrum(identifier, data_dict, predicted_label, correct_label):
+    label = ['not-interesting', 'emission', 'double-peak'][predicted_label]
     row = pd.Series({
         'correct': correct_label,
-        'predicted': predicted_label,
+        'predicted': label,
         'iteration': data_dict['it']
         }, name=identifier)
     data_dict['est_perf_df'] = data_dict['est_perf_df'].append(row)
@@ -93,32 +96,68 @@ mark_emission = partial(mark_spectrum, correct_label='emission')
 mark_double_peak = partial(mark_spectrum, correct_label='double-peak')
 
 
-def get_reclassification_spectra(data_dict):
-    # TODO
-    # distance = np.abs(y_pred - 0.5)
-    # index = np.argsort(distance)[:64]
-    # gen = (filename for filename in ids[index])
-    ...
+def get_reclassification_spectra(data_dict, size=100):
+    idx = np.argsort(data_dict['entropy'])[-size:]
+    data_dict['idx'] = idx
+    ids = data_dict['ids'][:]
+    labels = data_dict['labels'][:]
+    return (pair for pair in zip(ids[idx], labels[idx]))
 
 
-def classify_spectrum():
-    # TODO
-    # row = pd.Series({'label': 0, 'iteration': iteration}, name=filename)
-    # oracle = oracle.append(row)
-    ...
+def classify_spectrum(identifier, data_dict, predicted_label, correct_label):
+    label = ['not-interesting', 'emission', 'double-peak'][predicted_label]
+    row = pd.Series({
+        'correct': correct_label,
+        'predicted': label,
+        'iteration': data_dict['it']
+        }, name=identifier)
+    data_dict['oracle_df'] = data_dict['oracle_df'].append(row)
 
 
-# TODO
-clasify_not_interesting = None
-clasify_emission = None
-clasify_double_peak = None
+classify_not_interesting = partial(
+        classify_spectrum, correct_label='not-interesting'
+        )
+classify_emission = partial(classify_spectrum, correct_label='emission')
+classify_double_peak = partial(classify_spectrum, correct_label='double-peak')
 
 
 def next_iteration(data_dict):
+    it = data_dict['it']
+    # store DataFrames
+    data_dict['est_perf_df'].to_csv('data/est-perf-df.csv')
+    oracle_df = data_dict['oracle_df']
+    oracle_df.to_csv('data/oracle-df.csv')
+    # modify datasets
+    idx = data_dict['idx']
+    ids_tr = data_dict['ids_tr']
+    X_tr = data_dict['X_tr']
+    y_tr = data_dict['y_tr']
+    X = data_dict['X'][...]
+    ids = data_dict['ids'][:]
+    X_tr = np.concatenate((X_tr, X[idx]))
+    ids_tr = np.concatenate((ids_tr, ids[idx]))
+    # extract labels
+    mapping = {'not-interesting': 0, 'emission': 1, 'double-peak': 2}
+    y = oracle_df[oracle_df['iteration'] == it]['correct'].map(mapping).values
+    y_tr = np.concatenate((y_tr, y))
+    # remove reclassified spectra
+    bool_idx = np.ones(X.shape[0], np.bool)
+    bool_idx[idx] = False
+    X = X[bool_idx]
+    ids = ids[bool_idx]
+    # save datasets
     data_dict['it'] += 1
-    # TODO
-    # data.renew_datasets()
-    ...
+    it = data_dict['it']
+    hdf5 = data_dict['hdf5']
+    data.save(it, hdf5, ids_tr, X_tr, y_tr, ids, X)
+    # modify data_dict
+    it_gr = hdf5['iteration_{:02}'.format(it)]
+    data_dict['ids_tr'] = it_gr['ids_tr']
+    data_dict['X_tr'] = it_gr['X_tr']
+    data_dict['y_tr'] = it_gr['y_tr']
+    data_dict['ids'] = it_gr['ids']
+    data_dict['X'] = it_gr['X']
+    return data_dict
 
 
 def save_candidates(data_dict):
@@ -135,3 +174,7 @@ def save_candidates(data_dict):
 
     # candidates.to_csv('data/first-active-learning-candidates.csv', index=False)
     ...
+
+
+def finalize(data_dict):
+    data_dict['hdf5'].close()

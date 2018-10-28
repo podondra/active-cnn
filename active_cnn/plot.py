@@ -10,11 +10,13 @@ def plot_ondrejov_spectrum(spectrum_id, ondrejov, ax):
     ax.plot(wavelengths, fluxes)
 
 
-def preview_lamost_spectrum(filename):
+def preview_lamost_spectrum(filename, prediction):
     directory = filename.split('-')[2].split('_sp')[0]
     filepath = '/lamost/fits/' + directory + '/' + filename
     name, wave, flux = lamost.read_spectrum(filepath)
     fig, (ax1, ax2) = plt.subplots(nrows=2)
+    label = ['not-interesting', 'emission', 'double-peak'][prediction]
+    ax1.set_title('prediction: ' + label)
     ax1.axvline(x=6564.614, c='k', alpha=0.5, ls='dashed')
     ax1.plot(wave, flux)
     index = (6519 < wave) & (wave < 6732)
@@ -24,8 +26,9 @@ def preview_lamost_spectrum(filename):
     plt.close(fig)
 
 
-def plot_performance(performance_df):
-    mean = performance_df.groupby('iteration').mean()
+def plot_performance(perf_df):
+    perf_df['success'] = perf_df['predicted'] == perf_df['correct']
+    mean = perf_df.groupby('iteration').mean()
     ax = plt.axes(xlabel='iteration', ylabel='estimated accuracy')
-    ax.plot(mean.index - 1, mean, 'x')
+    ax.plot(mean.index, mean, 'x')
     ax.set_xticks(mean.index - 1);
