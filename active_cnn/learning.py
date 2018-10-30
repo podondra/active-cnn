@@ -161,20 +161,31 @@ def next_iteration(data_dict):
 
 
 def save_candidates(data_dict):
-    # TODO
-    # candidates_filenames = set(ids[labels]) | set(oracle[oracle['label'] == 1].index)
-    # len(candidates_filenames)
-
-    # candidates = pd.DataFrame(columns=('path', 'label'))
-    # for filename in candidates_filenames:
-    #     directory = filename.split('-')[2].split('_sp')[0]
-    #     filepath = '/lamost/' + directory + '/' + filename
-    #     row = pd.Series({'path': filepath, 'label': 'interesting'})
-    #     candidates = candidates.append(row, ignore_index=True)
-
-    # candidates.to_csv('data/first-active-learning-candidates.csv', index=False)
-    ...
-
+    ids = data_dict['ids']
+    labels = data_dict['labels']
+    oracle_df = data_dict['oracle_df']
+    # candidates from oracle
+    oracle_idx = oracle_df['correct'] != 'not-interesting'
+    oracle_cans = oracle_df[oracle_idx].index.values
+    oracle_labels = oracle_df[oracle_idx]['correct'].values
+    # cnn's candidates
+    cans_idx = labels[:] != 0
+    cans_filenames = ids[cans_idx]
+    cans_num_labels = labels[cans_idx]
+    cans_labels = np.zeros_like(cans_filenames, dtype=oracle_labels.dtype)
+    cans_labels[cans_num_labels == 1] = 'emission'
+    cans_labels[cans_num_labels == 2] = 'double-peak'
+    # merge
+    all_filenames = np.concatenate((cans_filenames, oracle_cans))
+    all_labels = np.concatenate((cans_labels, oracle_labels))
+    # DataFrame for candidates
+    cans_df = pd.DataFrame(columns=('path', 'label'))
+    for filename, label in zip(all_filenames, all_labels):
+        directory = filename.split('-')[2].split('_sp')[0]
+        filepath = '/lamost/' + directory + '/' + filename
+        row = pd.Series({'path': filepath, 'label': label})
+        cans_df = cans_df.append(row, ignore_index=True)
+    cans_df.to_csv('candidates.csv', index=False)
 
 def finalize(data_dict):
     data_dict['hdf5'].close()
