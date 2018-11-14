@@ -35,3 +35,4 @@ def plot_performance(perf_df):
     ax = plt.axes(xlabel='iteration', ylabel='estimated accuracy')
     ax.plot(mean.index, mean, 'x')
     ax.set_xticks(mean.index);
+    plt.savefig('figures/performance.pdf')

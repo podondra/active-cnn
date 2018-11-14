@@ -182,7 +182,7 @@ def save_candidates(data_dict):
     cans_df = pd.DataFrame(columns=('path', 'label'))
     for filename, label in zip(all_filenames, all_labels):
         directory = filename.split('-')[2].split('_sp')[0]
-        filepath = '/lamost/' + directory + '/' + filename
+        filepath = '/lamost/fits/' + directory + '/' + filename
         row = pd.Series({'path': filepath, 'label': label})
         cans_df = cans_df.append(row, ignore_index=True)
     cans_df.to_csv('candidates.csv', index=False)
