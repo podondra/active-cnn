@@ -10,3 +10,7 @@ Code for Astronomy &amp; Astrophysics letter
 		-p 8888:8888 \
 		--name podondra-active-cnn \
 		podondra/active-cnn
+
+## TODO list
+
+1. compare to *passive learning*
