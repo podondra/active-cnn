@@ -1,8 +1,10 @@
 # Data files
-/data/
+/data/*
+!/data/.gitkeep
 
 # Figures
-/figures/
+/figures/*
+!/figures/.gitkeep
 
 # VIM files
 *~
